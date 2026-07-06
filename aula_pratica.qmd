@@ -1,0 +1,824 @@
+---
+title: "Aula prática: introdução ao R para Geoprocessamento"
+subtitle: "Do CSV ao mapa interativo com sf e Leaflet"
+author: "Raphael de Freitas Saldanha"
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-tools: true
+    theme: cosmo
+    df-print: paged
+editor: source
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objetivos de aprendizagem
+
+Ao final da aula, espera-se que seja possível:
+
+-   Usar o R como calculadora.
+-   Criar objetos.
+-   Trabalhar com vetores.
+-   Calcular estatísticas básicas.
+-   Criar uma função simples.
+-   Instalar e carregar pacotes.
+-   Usar funções de pacotes.
+-   Ler arquivos CSV.
+-   Ler um shapefile com o pacote `sf`.
+-   Juntar dados tabulares e espaciais.
+-   Criar um mapa interativo com o pacote `leaflet`.
+
+## Dados necessários
+
+Os arquivos da aula estão organizados desta forma:
+
+``` text
+ aula_r_geoprocessamento/
+ ├── dados/
+ │   ├── municipios.shp
+ │   ├── municipios.dbf
+ │   ├── municipios.shx
+ │   ├── municipios.prj
+ │   └── indicadores_municipais.csv
+ └── aula_pratica_r_geoprocessamento.qmd
+```
+
+O arquivo `indicadores_municipais.csv` tem uma coluna de código municipal compatível com o shapefile. Nesta aula, os dados são a malha municipal do Rio de Janeiro e a população municipal do IBGE.
+
+# R, o que é, onde baixar
+
+-   Linguagem R
+
+-   Instalação do R
+
+-   Posit RStudio
+
+-   Posit Positron
+
+## Interface do RStudio
+
+-   Script
+
+-   Console
+
+-   Outras áreas
+
+# Primeiros comandos em R
+
+##  Usando o R como calculadora
+
+::: {.callout-tip title="Exercício"}
+Usando o R como calculadora, calcule:
+
+-   `10 mais 5`
+-   `10 divido por 3`
+-   `2 elevado a 4`
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+10 + 5
+10 / 3
+2^4
+```
+:::
+
+## Criando objetos
+
+Para criar objetos, o R usa uma seta para atribuir um valor ao nome do objeto. A seta é digitada como `<-` (sinal de menor e um traço).
+
+Lembre-se que o R é diferencia maiúsculo e minúsculo.
+
+::: {.callout-tip title="Exercício"}
+Crie um objeto chamado `populacao` com o valor `100000` e outro chamado `casos` com o valor `250`.
+
+Depois calcule uma taxa por 100 mil habitantes.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+populacao <- 100000
+casos <- 250
+
+taxa <- casos / populacao * 100000
+taxa
+```
+:::
+
+::: {.callout-note title="Discussão"}
+O R guarda valores em objetos. Esses objetos podem depois ser reutilizados em novos cálculos.
+:::
+
+## Estrutura básica de uma função
+
+Uma função no R é dada pelo nome da função (geralmente um nome em inglês) e parenteses. Dentro dos parenteses, colocamos os argumentos necessários para a sua execução.
+
+O R vem com várias funções já prontas. Pacotes de funções expandem as capacidades do R e você também pode criar as suas próprias funções.
+
+::: {.callout-tip title="Exercício"}
+Calcule a raiz quadrada de 9.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+sqrt(9)
+```
+:::
+
+# Vetores e estatísticas básicas
+
+## Criando vetores
+
+Para criar vetores de valores, usamos a função `c` de *combine*. Lembre-se que o R usa vírgula para separar elementos e ponto como separador decimal.
+
+::: {.callout-tip title="Exercício"}
+Imagine que estes são os números de casos em cinco municípios:
+
+``` text
+10, 25, 8, 40, 17
+```
+
+Crie um objeto chamado `casos` contendo esses valores.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+casos <- c(10, 25, 8, 40, 17)
+casos
+```
+:::
+
+## Estatísticas básicas
+
+::: {.callout-tip title="Exercício"}
+Com o vetor `casos`, calcule as estatísticas abaixo usando as funções sugeridas:
+
+-   média: `mean`
+-   mínimo: `min`
+-   máximo: `max`
+-   soma: `sum`
+-   desvio padrão: `sd`
+-   número de elementos: `length`
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+mean(casos)
+min(casos)
+max(casos)
+sum(casos)
+sd(casos)
+length(casos)
+```
+:::
+
+## Calculando taxas em vetores
+
+::: {.callout-tip title="Exercício"}
+Agora crie um vetor de população para os cinco municípios e calcule a taxa por 100 mil habitantes para cada um, usando o objeto `casos` que criamos anteriormente.
+
+Populações:
+
+``` text
+20000, 50000, 12000, 80000, 30000
+```
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+casos <- c(10, 25, 8, 40, 17)
+populacao <- c(20000, 50000, 12000, 80000, 30000)
+
+taxa <- casos / populacao * 100000
+taxa
+```
+:::
+
+::: {.callout-tip title="Miniatividade"}
+Responda usando código:
+
+-   Qual é a maior taxa?
+-   Qual é a taxa média?
+-   Quantos municípios foram analisados?
+-   Quais municípios têm taxa maior que 50 por 100 mil?
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+max(taxa)
+mean(taxa)
+length(taxa)
+
+taxa > 50
+taxa[taxa > 50]
+```
+:::
+
+# Criando uma função simples
+
+Se vamos calcular taxa várias vezes, faz sentido repetir sempre a fórmula?
+
+## Função para taxa por 100 mil
+
+::: {.callout-tip title="Exercício"}
+Crie uma função chamada `calcular_taxa` que receba dois argumentos:
+
+-   `casos`
+-   `populacao`
+
+A função deve devolver a taxa por 100 mil habitantes.
+
+Essa é a estrutura básica de uma função:
+
+```{r}
+#| evaluate: false
+nome <- function(argumento) {
+  x <- argumento + 10
+
+  return(x)
+}
+```
+
+
+
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+calcular_taxa <- function(casos, populacao) {
+  taxa <- casos / populacao * 100000
+  return(taxa)
+}
+```
+:::
+
+## Testando a função
+
+::: {.callout-tip title="Exercício"}
+Teste a função com valores únicos e depois com vetores.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+calcular_taxa(250, 100000)
+calcular_taxa(10, 20000)
+
+casos <- c(10, 25, 8, 40, 17)
+populacao <- c(20000, 50000, 12000, 80000, 30000)
+
+calcular_taxa(casos, populacao)
+```
+:::
+
+::: {.callout-note title="Discussão"}
+Pacotes do R são, em grande parte, conjuntos de funções prontas para resolver problemas específicos.
+:::
+
+# Pacotes
+
+## Instalar e carregar pacotes
+
+``` text
+install.packages() instala o pacote no computador.
+library() carrega o pacote na sessão atual.
+```
+
+::: {.callout-tip title="Exercício"}
+Instale e carregue o pacote `dplyr`. Para instalar um pacote, use a função `install.packages`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+#| eval: false
+install.packages("dplyr")
+library(dplyr)
+```
+:::
+
+## Usando funções de pacotes
+
+Vamos criar uma pequena tabela para praticar o uso de funções do `dplyr`.
+
+::: {.callout-tip title="Exercício"}
+Crie uma tabela com cinco municípios fictícios, contendo nome, população e casos.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+library(dplyr)
+
+dados <- data.frame(
+  municipio = c("A", "B", "C", "D", "E"),
+  populacao = c(20000, 50000, 12000, 80000, 30000),
+  casos = c(10, 25, 8, 40, 17)
+)
+
+dados
+```
+:::
+
+## Criando uma nova coluna
+
+::: {.callout-tip title="Exercício"}
+Usando `mutate()`, crie uma nova coluna chamada `taxa_100mil`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+dados <- dados |>
+  mutate(taxa_100mil = casos / populacao * 100000)
+
+dados
+```
+:::
+
+::: {.callout-note title="Discussão"}
+O operador `|>` pode ser lido como: “pegue o objeto anterior e envie para a próxima função”.
+:::
+
+## Resumindo dados
+
+::: {.callout-tip title="Exercício"}
+Calcule a média da taxa, a maior taxa e o total de casos.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+dados |>
+  summarise(
+    media_taxa = mean(taxa_100mil),
+    maior_taxa = max(taxa_100mil),
+    total_casos = sum(casos)
+  )
+```
+:::
+
+# Lendo dados em CSV
+
+## Diretório de trabalho
+
+Como o R sabe onde estão os arquivos?
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+getwd()
+list.files()
+list.files("dados")
+```
+:::
+
+## Lendo o CSV
+
+::: {.callout-tip title="Exercício"}
+Leia o arquivo `indicadores_municipais.csv`, que está dentro da pasta `dados`. Use a função `read_csv`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+library(readr)
+
+indicadores <- read_csv("dados/indicadores_municipais.csv")
+indicadores
+```
+:::
+
+Se o arquivo estiver separado por ponto e vírgula, use:
+
+::: {.callout-note title="Alternativa para CSV separado por ponto e vírgula" collapse="true"}
+```{r}
+#| eval: false
+indicadores <- read_csv2("dados/indicadores_municipais.csv")
+indicadores
+```
+:::
+
+## Explorando a tabela
+
+::: {.callout-tip title="Exercício"}
+Investigue a tabela usando funções básicas.
+
+Tente descobrir:
+
+-   quais são as colunas;
+-   qual é a estrutura dos dados;
+-   qual é o resumo das variáveis numéricas.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+names(indicadores)
+str(indicadores)
+summary(indicadores)
+```
+:::
+
+## Ordenando e resumindo indicadores
+
+::: {.callout-tip title="Exercício"}
+Descubra qual município tem a maior densidade populacional.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+library(dplyr)
+
+indicadores |>
+  arrange(desc(densidade_hab_km2))
+```
+:::
+
+Para ver apenas os primeiros registros:
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+indicadores |>
+  arrange(desc(densidade_hab_km2)) |>
+  head()
+```
+:::
+
+::: {.callout-tip title="Exercício"}
+Calcule a média, o valor mínimo e o valor máximo da densidade populacional.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+indicadores |>
+  summarise(
+    media = mean(densidade_hab_km2, na.rm = TRUE),
+    minimo = min(densidade_hab_km2, na.rm = TRUE),
+    maximo = max(densidade_hab_km2, na.rm = TRUE)
+  )
+```
+:::
+
+# Carregando um shapefile com `sf`
+
+``` text
+CSV: tabela sem geometria.
+Shapefile: tabela com geometria.
+sf: pacote para trabalhar com dados espaciais no R.
+```
+
+## Lendo o shapefile
+
+::: {.callout-tip title="Exercício"}
+Carregue o shapefile `municipios.shp`, que está dentro da pasta `dados` com a função `st_read`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+library(sf)
+
+municipios <- st_read("dados/municipios.shp")
+municipios
+```
+:::
+
+## Investigando o dado espacial
+
+::: {.callout-tip title="Exercício"}
+Investigue o objeto espacial.
+
+Tente descobrir:
+
+-   quais são as colunas;
+-   qual é o sistema de referência de coordenadas;
+-   qual é o tipo de geometria;
+-   como visualizar rapidamente a geometria.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+names(municipios)
+st_crs(municipios)
+st_geometry_type(municipios)
+plot(st_geometry(municipios))
+```
+:::
+
+Qual coluna do shapefile parece ser o código do município?
+
+# Preparando a chave de ligação
+
+Para juntar o CSV com o shapefile, precisamos que o código municipal esteja no mesmo formato nos dois objetos.
+
+## Comparando colunas
+
+::: {.callout-tip title="Exercício"}
+Compare os nomes das colunas do CSV e do shapefile.
+
+Qual coluna pode ser usada como chave de ligação?
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+names(indicadores)
+names(municipios)
+```
+:::
+
+## Padronizando códigos municipais
+
+No exemplo abaixo, supõe-se que o shapefile possui uma coluna chamada `CD_MUN` e que o CSV possui uma coluna chamada `cod_mun`.
+
+::: callout-warning
+Ajuste os nomes das colunas conforme os arquivos usados na aula.
+:::
+
+::: {.callout-tip title="Exercício"}
+Crie nos dois objetos uma coluna chamada `cod_mun` em formato texto.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+municipios <- municipios |>
+  mutate(cod_mun = as.character(CD_MUN))
+
+indicadores <- indicadores |>
+  mutate(cod_mun = as.character(cod_mun))
+```
+:::
+
+# Juntando CSV e shapefile
+
+Explique:
+
+``` text
+O shapefile sabe onde os municípios estão.
+O CSV sabe o valor do indicador.
+A chave de ligação é o código municipal.
+```
+
+## Fazendo a junção
+
+::: {.callout-tip title="Exercício"}
+Junte o objeto espacial `municipios` com a tabela `indicadores`, usando a coluna `cod_mun`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+mapa <- municipios |>
+  left_join(
+    indicadores |>
+      select(-municipio, -area_km2),
+    by = "cod_mun"
+  )
+
+mapa
+```
+:::
+
+## Verificando se a junção funcionou
+
+::: {.callout-tip title="Exercício"}
+Verifique se há municípios sem valor de `densidade_hab_km2` depois da junção.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+sum(is.na(mapa$densidade_hab_km2))
+```
+:::
+
+Se houver valores ausentes:
+
+::: {.callout-note title="Investigando municípios sem correspondência" collapse="true"}
+```{r}
+mapa |>
+  filter(is.na(densidade_hab_km2)) |>
+  select(cod_mun)
+```
+:::
+
+::: {.callout-note title="Discussão"}
+Perguntas úteis:
+
+-   Por que aparecem valores `NA`?
+-   O código municipal está no mesmo formato nos dois arquivos?
+-   O CSV tem todos os municípios?
+-   O shapefile tem municípios a mais?
+-   Há diferenças de zeros à esquerda?
+:::
+
+## Visualização rápida
+
+::: {.callout-tip title="Exercício"}
+Faça uma visualização rápida da variável `densidade_hab_km2`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+plot(mapa["densidade_hab_km2"])
+```
+:::
+
+# Criando mapa interativo com Leaflet
+
+``` text
+O pacote leaflet cria mapas interativos.
+Para funcionar bem na web, é recomendável usar coordenadas em latitude/longitude.
+```
+
+## Transformando o sistema de coordenadas
+
+::: {.callout-tip title="Exercício"}
+Transforme o objeto espacial para o sistema de coordenadas EPSG:4326.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+library(leaflet)
+
+mapa_leaflet <- mapa |>
+  st_transform(4326)
+```
+:::
+
+## Criando uma paleta de cores
+
+::: {.callout-tip title="Exercício"}
+Crie uma paleta de cores para representar a variável `densidade_hab_km2`.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+pal <- colorNumeric(
+  palette = "YlOrRd",
+  domain = mapa_leaflet$densidade_hab_km2,
+  na.color = "#cccccc"
+)
+```
+:::
+
+## Mapa básico
+
+::: {.callout-tip title="Exercício"}
+Crie um mapa Leaflet básico com os polígonos coloridos pela densidade populacional.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+leaflet(mapa_leaflet) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = ~ pal(densidade_hab_km2),
+    color = "white",
+    weight = 1,
+    fillOpacity = 0.7
+  )
+```
+:::
+
+## Adicionando popup
+
+::: {.callout-tip title="Exercício"}
+Adicione um popup com o nome do município, a população e a densidade populacional.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+leaflet(mapa_leaflet) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = ~ pal(densidade_hab_km2),
+    color = "white",
+    weight = 1,
+    fillOpacity = 0.7,
+    popup = ~ paste0(
+      "<strong>Município: </strong>",
+      municipio,
+      "<br>",
+      "<strong>População: </strong>",
+      populacao,
+      "<br>",
+      "<strong>Densidade (hab./km²): </strong>",
+      round(densidade_hab_km2, 2)
+    )
+  )
+```
+:::
+
+## Adicionando legenda
+
+::: {.callout-tip title="Exercício"}
+Adicione uma legenda ao mapa.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+leaflet(mapa_leaflet) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = ~ pal(densidade_hab_km2),
+    color = "white",
+    weight = 1,
+    fillOpacity = 0.7,
+    popup = ~ paste0(
+      "<strong>Município: </strong>",
+      municipio,
+      "<br>",
+      "<strong>População: </strong>",
+      populacao,
+      "<br>",
+      "<strong>Densidade (hab./km²): </strong>",
+      round(densidade_hab_km2, 2)
+    )
+  ) |>
+  addLegend(
+    pal = pal,
+    values = ~densidade_hab_km2,
+    title = "Densidade (hab./km²)",
+    opacity = 0.7
+  )
+```
+:::
+
+# Apêndice: código completo de referência
+
+Este bloco pode ser usado pelo professor ao final da aula ou guardado como referência. Evite mostrá-lo logo no início.
+
+```{r}
+# Pacotes
+library(readr)
+library(dplyr)
+library(sf)
+library(leaflet)
+
+# Ler CSV
+indicadores <- read_csv("dados/indicadores_municipais.csv")
+
+# Explorar CSV
+names(indicadores)
+summary(indicadores)
+
+# Ler shapefile
+municipios <- st_read("dados/municipios.shp")
+
+# Explorar shapefile
+names(municipios)
+st_crs(municipios)
+plot(st_geometry(municipios))
+
+# Padronizar chaves
+municipios <- municipios |>
+  mutate(cod_mun = as.character(CD_MUN))
+
+indicadores <- indicadores |>
+  mutate(cod_mun = as.character(cod_mun))
+
+# Juntar dados
+mapa <- municipios |>
+  left_join(
+    indicadores |>
+      select(-municipio, -area_km2),
+    by = "cod_mun"
+  )
+
+# Verificar junção
+sum(is.na(mapa$densidade_hab_km2))
+
+# Preparar para Leaflet
+mapa_leaflet <- mapa |>
+  st_transform(4326)
+
+# Paleta
+pal <- colorNumeric(
+  palette = "YlOrRd",
+  domain = mapa_leaflet$densidade_hab_km2,
+  na.color = "#cccccc"
+)
+
+# Mapa
+leaflet(mapa_leaflet) |>
+  addTiles() |>
+  addPolygons(
+    fillColor = ~ pal(densidade_hab_km2),
+    color = "white",
+    weight = 1,
+    fillOpacity = 0.7,
+    popup = ~ paste0(
+      "<strong>Município: </strong>",
+      municipio,
+      "<br>",
+      "<strong>População: </strong>",
+      populacao,
+      "<br>",
+      "<strong>Densidade (hab./km²): </strong>",
+      round(densidade_hab_km2, 2)
+    )
+  ) |>
+  addLegend(
+    pal = pal,
+    values = ~densidade_hab_km2,
+    title = "Densidade (hab./km²)",
+    opacity = 0.7
+  )
+```
