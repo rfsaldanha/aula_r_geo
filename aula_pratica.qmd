@@ -1,6 +1,6 @@
 ---
 title: "Aula prática: introdução ao R para Geoprocessamento"
-subtitle: "Do CSV ao mapa interativo com sf e Leaflet"
+subtitle: "Do CSV ao mapa interativo"
 author: "Raphael de Freitas Saldanha"
 lang: pt-BR
 format:
@@ -12,6 +12,7 @@ format:
     code-tools: true
     theme: cosmo
     df-print: paged
+    embed-resources: true
 editor: source
 execute:
   echo: true
@@ -19,23 +20,7 @@ execute:
   message: false
 ---
 
-# Objetivos de aprendizagem
-
-Ao final da aula, espera-se que seja possível:
-
--   Usar o R como calculadora.
--   Criar objetos.
--   Trabalhar com vetores.
--   Calcular estatísticas básicas.
--   Criar uma função simples.
--   Instalar e carregar pacotes.
--   Usar funções de pacotes.
--   Ler arquivos CSV.
--   Ler um shapefile com o pacote `sf`.
--   Juntar dados tabulares e espaciais.
--   Criar um mapa interativo com o pacote `leaflet`.
-
-## Dados necessários
+# Dados necessários
 
 Os arquivos da aula estão organizados desta forma:
 
@@ -94,7 +79,7 @@ Usando o R como calculadora, calcule:
 
 Para criar objetos, o R usa uma seta para atribuir um valor ao nome do objeto. A seta é digitada como `<-` (sinal de menor e um traço).
 
-Lembre-se que o R é diferencia maiúsculo e minúsculo.
+Lembre-se que o R diferencia maiúsculo e minúsculo.
 
 ::: {.callout-tip title="Exercício"}
 Crie um objeto chamado `populacao` com o valor `100000` e outro chamado `casos` com o valor `250`.
@@ -741,6 +726,20 @@ leaflet(mapa_leaflet) |>
 ```
 :::
 
+# Exportando um novo shapefile
+
+Podemos exportar o objeto `mapa_leaflet` para um novo shapefile que pode ser usado no QGIS e outros programas.
+
+::: {.callout-tip title="Exercício"}
+Exporte o objeto `mapa_leaflet` como um novo shapefile.
+:::
+
+::: {.callout-note title="Resposta" collapse="true"}
+```{r}
+st_write(obj = mapa_leaflet, dsn = "dados/municipios2.shp")
+```
+:::
+
 # Apêndice: código completo de referência
 
 Este bloco pode ser usado pelo professor ao final da aula ou guardado como referência. Evite mostrá-lo logo no início.
@@ -821,4 +820,7 @@ leaflet(mapa_leaflet) |>
     title = "Densidade (hab./km²)",
     opacity = 0.7
   )
+
+# Exportar shapefile
+# st_write(obj = mapa_leaflet, dsn = "dados/municipios2.shp")
 ```
